@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Fest Sponsor Management{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+        <p>Welcome back, <strong>Admin</strong>! Manage your fest sponsors, alumni, and speakers efficiently.</p>
+    </div>
+    
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon sponsors">
+                <i class="fas fa-handshake"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="sponsors-count">0</h3>
+                <p>Total Sponsors</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon alumni">
+                <i class="fas fa-user-graduate"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="alumni-count">0</h3>
+                <p>Total Alumni</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon speakers">
+                <i class="fas fa-microphone"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="speakers-count">0</h3>
+                <p>Total Speakers</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="quick-actions">
+        <h2><i class="fas fa-rocket"></i> Quick Actions</h2>
+        <div class="action-grid">
+            <a href="{{ url_for('sponsors') }}" class="action-card">
+                <i class="fas fa-handshake"></i>
+                <h3>Manage Sponsors</h3>
+                <p>Search, add, and manage your event sponsors</p>
+            </a>
+            <a href="{{ url_for('alumni') }}" class="action-card">
+                <i class="fas fa-user-graduate"></i>
+                <h3>Manage Alumni</h3>
+                <p>Handle alumni relationships and contacts</p>
+            </a>
+            <a href="{{ url_for('speakers') }}" class="action-card">
+                <i class="fas fa-microphone"></i>
+                <h3>Manage Speakers</h3>
+                <p>Manage speaker profiles and sessions</p>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load dashboard statistics
+document.addEventListener('DOMContentLoaded', function() {
+    loadStats();
+});
+
+async function loadStats() {
+    try {
+        const entities = ['sponsors', 'alumni', 'speakers'];
+        
+        for (const entity of entities) {
+            const response = await fetch(`/api/${entity}/count`);
+            const data = await response.json();
+            
+            const countElement = document.getElementById(`${entity}-count`);
+            if (countElement) {
+                countElement.textContent = data.count || 0;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading stats:', error);
+    }
+}
+</script>
+{% endblock %}

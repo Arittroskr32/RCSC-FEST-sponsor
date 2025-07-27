@@ -1,0 +1,403 @@
+{% extends "base.html" %}
+
+{% block title %}Alumni - Fest Sponsor Management{% endblock %}
+
+{% block content %}
+<div class="management-container">
+    <div class="management-header">
+        <h1><i class="fas fa-user-graduate"></i> Alumni Management</h1>
+        <p>Search, add, and manage alumni information</p>
+        <div class="total-count">
+            Total Alumni: <span id="alumni-count">0</span>
+        </div>
+    </div>
+    <div class="management-actions">
+        <!-- Search Section -->
+        <div class="action-section">
+            <h3><i class="fas fa-search"></i> Search Alumni</h3>
+            <div class="search-form">
+                <input type="text" id="searchInput" placeholder="Search by name, mail, linkedin...">
+                <button onclick="searchAlumni()" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Search
+                </button>
+                <button onclick="clearSearch()" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Clear
+                </button>
+            </div>
+            <div id="searchResults" class="search-results" style="margin-top: 24px;"></div>
+        </div>
+        <!-- Add Alumni Section -->
+        <div class="action-section">
+            <h3><i class="fas fa-plus"></i> Add New Alumni</h3>
+            <form id="addAlumniForm" class="add-form">
+                <!-- Prevent GET submission by setting method POST and action javascript:void(0); -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="ruetianName">Ruetian Name *</label>
+                        <input type="text" id="ruetianName" name="ruetian_name" required autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="ruetianPhone">Ruetian Phone (optional)</label>
+                        <input type="tel" id="ruetianPhone" name="ruetian_phone" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="ruetianMail">Ruetian Mail *</label>
+                        <input type="email" id="ruetianMail" name="ruetian_mail" required autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="ruetianLinkedin">Ruetian LinkedIn Profile *</label>
+                        <input type="url" id="ruetianLinkedin" name="ruetian_linkedin" required autocomplete="off">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success" id="addAlumniSubmitBtn">
+                    <i class="fas fa-plus"></i> Add Alumni
+                </button>
+            </form>
+        </div>
+        <!-- List All Alumni Section -->
+        <div class="action-section">
+            <h3><i class="fas fa-list"></i> All Alumni</h3>
+            <div style="display:flex; gap:16px; margin-bottom:16px;">
+                <button onclick="loadAllAlumni()" class="btn btn-info">
+                    <i class="fas fa-eye"></i> Show All Alumni
+                </button>
+                <button onclick="downloadAllAlumni()" class="btn btn-success">
+                    <i class="fas fa-download"></i> Download All Alumni
+                </button>
+            </div>
+            <div id="alumniList" class="results-list" style="margin-top:24px;"></div>
+        </div>
+    </div>
+</div>
+
+<div id="editAlumniModal" class="modal" style="display:none;">
+    <div class="modal-content card-style">
+        <span class="close" onclick="closeEditAlumniModal()">&times;</span>
+        <h3 style="text-align:center; margin-bottom:18px;">Edit Alumni</h3>
+        <form id="editAlumniForm" style="padding: 0 12px;">
+            <input type="hidden" id="editAlumniId">
+            <div class="card-fields">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editRuetianName">Ruetian Name *</label>
+                        <input type="text" id="editRuetianName" name="ruetian_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editRuetianPhone">Ruetian Phone (optional)</label>
+                        <input type="tel" id="editRuetianPhone" name="ruetian_phone">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editRuetianMail">Ruetian Mail *</label>
+                        <input type="email" id="editRuetianMail" name="ruetian_mail" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editRuetianLinkedin">Ruetian LinkedIn Profile *</label>
+                        <input type="url" id="editRuetianLinkedin" name="ruetian_linkedin" required>
+                    </div>
+                </div>
+            </div>
+            <div style="text-align:center; margin-top:18px;">
+                <button type="submit" class="btn btn-success" style="width:60%; font-size:1.1em;">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<style>
+.card-style {
+    max-width: 540px;
+    margin: 32px auto;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    padding: 24px 0 18px 0;
+    border: 1px solid #e0e0e0;
+}
+.card-fields .form-row {
+    display: flex;
+    gap: 18px;
+    margin-bottom: 12px;
+}
+.card-fields .form-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.card-fields label {
+    font-weight: 500;
+    margin-bottom: 6px;
+}
+.card-fields input, .card-fields select {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 1em;
+}
+.card-fields input:focus, .card-fields select:focus {
+    outline: none;
+    border-color: #007bff;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentAlumni = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadAlumniCount();
+    const alumniForm = document.getElementById('addAlumniForm');
+    alumniForm.removeAttribute('action');
+    alumniForm.removeAttribute('method');
+    alumniForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        addAlumni();
+    });
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchAlumni();
+        }
+    });
+});
+
+async function loadAlumniCount() {
+    try {
+        const response = await fetch('/api/alumni/count');
+        const data = await response.json();
+        document.getElementById('alumni-count').textContent = data.count || 0;
+    } catch (error) {
+        console.error('Error loading alumni count:', error);
+    }
+}
+
+async function searchAlumni() {
+    const searchTerm = document.getElementById('searchInput').value.trim();
+    if (!searchTerm) {
+        showAlert('Please enter a search term', 'warning');
+        return;
+    }
+    try {
+        const response = await fetch('/api/alumni/search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ search_term: searchTerm })
+        });
+        const alumni = await response.json();
+        displaySearchResults(alumni);
+    } catch (error) {
+        console.error('Error searching alumni:', error);
+        showAlert('Error searching alumni', 'error');
+    }
+}
+
+function displaySearchResults(alumni) {
+    const resultsDiv = document.getElementById('searchResults');
+    if (alumni.length === 0) {
+        resultsDiv.innerHTML = '<p class="no-results">No alumni found matching your search.</p>';
+        return;
+    }
+    let html = `<h4 style="margin-bottom:18px;">Search Results:</h4><div class="table-responsive" style="margin-bottom:24px;"><table class="table table-bordered table-striped" style="margin-bottom:0;">
+        <thead>
+            <tr>
+                <th style="padding:12px 18px;">Ruetian Name</th>
+                <th style="padding:12px 18px;">Ruetian Phone</th>
+                <th style="padding:12px 18px;">Ruetian Mail</th>
+                <th style="padding:12px 18px;">LinkedIn</th>
+            </tr>
+        </thead>
+        <tbody>`;
+    alumni.forEach(a => {
+        html += `<tr>
+            <td style="padding:10px 18px;">${a.ruetian_name || ''}</td>
+            <td style="padding:10px 18px;">${a.ruetian_phone || ''}</td>
+            <td style="padding:10px 18px;">${a.ruetian_mail || ''}</td>
+            <td style="padding:10px 18px;">${a.ruetian_linkedin ? `<a href="${a.ruetian_linkedin}" target="_blank">${a.ruetian_linkedin}</a>` : ''}</td>
+        </tr>`;
+    });
+    html += '</tbody></table></div>';
+    resultsDiv.innerHTML = html;
+}
+
+function loadAllAlumni() {
+    fetch('/api/alumni/list')
+        .then(response => response.json())
+        .then(alumni => {
+            displayAllAlumniTable(alumni);
+        });
+}
+
+function displayAllAlumniTable(alumni) {
+    const listDiv = document.getElementById('alumniList');
+    if (alumni.length === 0) {
+        listDiv.innerHTML = '<p class="no-results">No alumni found.</p>';
+        return;
+    }
+    let html = `<h4 style="margin-bottom:18px;">All Alumni:</h4><div class="table-responsive" style="margin-bottom:24px;"><table class="table table-bordered table-striped" style="margin-bottom:0;">
+        <thead>
+            <tr>
+                <th style="padding:12px 18px;">Ruetian Name</th>
+                <th style="padding:12px 18px;">Ruetian Phone</th>
+                <th style="padding:12px 18px;">Ruetian Mail</th>
+                <th style="padding:12px 18px;">LinkedIn</th>
+                <th style="padding:12px 18px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>`;
+    alumni.forEach(a => {
+        html += `<tr>
+            <td style="padding:10px 18px;">${a.ruetian_name || ''}</td>
+            <td style="padding:10px 18px;">${a.ruetian_phone || ''}</td>
+            <td style="padding:10px 18px;">${a.ruetian_mail || ''}</td>
+            <td style="padding:10px 18px;">${a.ruetian_linkedin ? `<a href="${a.ruetian_linkedin}" target="_blank">${a.ruetian_linkedin}</a>` : ''}</td>
+            <td style="padding:10px 18px;">
+                <button class="btn btn-warning btn-sm" onclick="editAlumni('${a._id}')"><i class="fas fa-edit"></i> Edit</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteAlumni('${a._id}')"><i class="fas fa-trash"></i> Delete</button>
+            </td>
+        </tr>`;
+    });
+    html += '</tbody></table></div>';
+    listDiv.innerHTML = html;
+}
+
+function editAlumni(id) {
+    fetch(`/api/alumni/list`)
+        .then(response => response.json())
+        .then(alumni => {
+            const a = alumni.find(x => x._id === id);
+            if (!a) return;
+            document.getElementById('editAlumniId').value = a._id;
+            document.getElementById('editRuetianName').value = a.ruetian_name || '';
+            document.getElementById('editRuetianPhone').value = a.ruetian_phone || '';
+            document.getElementById('editRuetianMail').value = a.ruetian_mail || '';
+            document.getElementById('editRuetianLinkedin').value = a.ruetian_linkedin || '';
+            document.getElementById('editAlumniModal').style.display = 'block';
+        });
+}
+
+function closeEditAlumniModal() {
+    document.getElementById('editAlumniModal').style.display = 'none';
+}
+
+document.getElementById('editAlumniForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const id = document.getElementById('editAlumniId').value;
+    const data = {
+        ruetian_name: document.getElementById('editRuetianName').value,
+        ruetian_phone: document.getElementById('editRuetianPhone').value,
+        ruetian_mail: document.getElementById('editRuetianMail').value,
+        ruetian_linkedin: document.getElementById('editRuetianLinkedin').value
+    };
+    try {
+        const response = await fetch(`/api/alumni/update/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        if (result.success) {
+            showAlert('Alumni updated successfully!', 'success');
+            closeEditAlumniModal();
+            loadAllAlumni();
+        } else {
+            showAlert(result.message || 'Error updating alumni', 'error');
+        }
+    } catch (error) {
+        showAlert('Error updating alumni', 'error');
+    }
+});
+
+
+async function addAlumni() {
+    const form = document.getElementById('addAlumniForm');
+    const formData = new FormData(form);
+    const alumniData = {
+        ruetian_name: formData.get('ruetian_name'),
+        ruetian_phone: formData.get('ruetian_phone'),
+        ruetian_mail: formData.get('ruetian_mail'),
+        ruetian_linkedin: formData.get('ruetian_linkedin')
+    };
+    try {
+        const response = await fetch('/api/alumni/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(alumniData)
+        });
+        const result = await response.json();
+        if (result.success) {
+            showAlert(result.message || 'Alumni added successfully!', 'success');
+            form.reset();
+            loadAlumniCount();
+        } else {
+            // Show specific toast for alumni exist
+            if (result.message && result.message.includes('already exists')) {
+                showAlert(result.message, 'warning');
+            } else {
+                showAlert(result.message || 'Error adding alumni', 'error');
+            }
+        }
+    } catch (error) {
+        console.error('Error adding alumni:', error);
+        showAlert('Error adding alumni', 'error');
+    }
+}
+
+async function deleteAlumni(alumniId) {
+    if (!confirm('Are you sure you want to delete this alumni?')) {
+        return;
+    }
+    try {
+        const response = await fetch(`/api/alumni/delete/${alumniId}`, {
+            method: 'DELETE'
+        });
+        const result = await response.json();
+        if (result.success) {
+            showAlert('Alumni deleted successfully!', 'success');
+            loadAlumniCount();
+            if (currentAlumni.length > 0) {
+                loadAllAlumni();
+            }
+        } else {
+            showAlert(result.message || 'Error deleting alumni', 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting alumni:', error);
+        showAlert('Error deleting alumni', 'error');
+    }
+}
+
+function clearSearch() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('searchResults').innerHTML = '';
+}
+
+function showAlert(message, type) {
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type}`;
+    alert.innerHTML = `
+        ${message}
+        <button class="close-alert">&times;</button>
+    `;
+    const container = document.querySelector('.management-container');
+    container.insertBefore(alert, container.firstChild);
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.remove();
+        }
+    }, 5000);
+    alert.querySelector('.close-alert').addEventListener('click', () => {
+        alert.remove();
+    });
+}
+
+function downloadAllAlumni() {
+    window.location.href = '/api/alumni/download';
+}
+</script>
+{% endblock %}
