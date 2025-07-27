@@ -4,5 +4,4 @@ python-dotenv
 werkzeug
 pandas
 xlsxwriter
-bson
 gunicorn
