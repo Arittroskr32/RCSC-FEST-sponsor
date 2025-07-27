@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Fest Sponsor Management Application
 
 A comprehensive web application for managing event sponsors, partners, vendors, and participants. Built with Python Flask backend and modern HTML/CSS frontend, with MongoDB Atlas for cloud database storage.
@@ -225,3 +226,6 @@ This project is open source and available under the [MIT License](LICENSE).
 **Ready to manage your fest like a pro!** 🎉
 
 Start by setting up your MongoDB Atlas database and deploying to Heroku for cloud access with your friends.
+=======
+# RCSC-FEST-sponsor
+>>>>>>> 2e4a709ca27d57f91d17788ee32ed211706e6011
