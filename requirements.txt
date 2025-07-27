@@ -5,3 +5,4 @@ werkzeug
 pandas
 xlsxwriter
 bson
+gunicorn
