@@ -10,8 +10,25 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY')
+
+# Always validate session against .env for admin/moderator
+@app.before_request
+def validate_env_session():
+    admin_username = os.environ.get('ADMIN_USERNAME')
+    moderator_username = os.environ.get('MODERATOR_USERNAME')
+    # Only check if logged in as admin/moderator
+    if 'role' in session:
+        if session['role'] == 'admin' and session.get('username') != admin_username:
+            session.clear()
+            flash('Admin credentials changed. Please log in again.', 'error')
+            return redirect(url_for('login'))
+        if session['role'] == 'moderator' and session.get('username') != moderator_username:
+            session.clear()
+            flash('Moderator credentials changed. Please log in again.', 'error')
+            return redirect(url_for('login'))
 
 # MongoDB Atlas configuration
 MONGO_URI = os.environ.get('MONGO_URI')
@@ -25,36 +42,7 @@ alumni_collection = db.alumni
 speakers_collection = db.speakers
 users_collection = db.users
 
-# Default admin user (credentials from environment variables)
-ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME')
-ADMIN_PASSWORD_RAW = os.environ.get('ADMIN_PASSWORD')
-DEFAULT_ADMIN = {
-    'username': ADMIN_USERNAME,
-    'password': generate_password_hash(ADMIN_PASSWORD_RAW),
-    'role': 'admin'
-}
 
-# Default moderator user (credentials from environment variables)
-MODERATOR_USERNAME = os.environ.get('NORMAL_USERNAME')
-MODERATOR_PASSWORD_RAW = os.environ.get('NORMAL_PASSWORD')
-DEFAULT_MODERATOR = {
-    'username': MODERATOR_USERNAME,
-    'password': generate_password_hash(MODERATOR_PASSWORD_RAW),
-    'role': 'moderator'
-}
-
-def init_admin():
-    """Initialize default admin user if not exists"""
-    # Add admin if not exists
-    if DEFAULT_ADMIN['username'] and not users_collection.find_one({'username': DEFAULT_ADMIN['username']}):
-        users_collection.insert_one(DEFAULT_ADMIN)
-    # Add moderator if not exists
-    if DEFAULT_MODERATOR['username'] and not users_collection.find_one({'username': DEFAULT_MODERATOR['username']}):
-        users_collection.insert_one(DEFAULT_MODERATOR)
-
-@app.before_request
-def before_request():
-    init_admin()
 
 @app.route('/')
 def index():
@@ -67,18 +55,36 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        
-        user = users_collection.find_one({'username': username})
-        
-        if user and check_password_hash(user['password'], password):
-            session['user_id'] = str(user['_id'])
-            session['username'] = user['username']
-            session['role'] = user.get('role', 'user')
-            flash(f"Login successfully!", 'success')
+
+        # Always check .env for admin/moderator
+        admin_username = os.environ.get('ADMIN_USERNAME')
+        admin_password = os.environ.get('ADMIN_PASSWORD')
+        moderator_username = os.environ.get('MODERATOR_USERNAME')
+        moderator_password = os.environ.get('NORMAL_PASSWORD')
+
+        if username == admin_username and password == admin_password:
+            session['user_id'] = 'admin'
+            session['username'] = admin_username
+            session['role'] = 'admin'
+            flash("Login successfully!", 'success')
+            return redirect(url_for('index'))
+        elif username == moderator_username and password == moderator_password:
+            session['user_id'] = 'moderator'
+            session['username'] = moderator_username
+            session['role'] = 'moderator'
+            flash("Login successfully!", 'success')
             return redirect(url_for('index'))
         else:
-            flash('Invalid username or password!', 'error')
-    
+            # Fallback to DB for other users
+            user = users_collection.find_one({'username': username})
+            if user and check_password_hash(user['password'], password):
+                session['user_id'] = str(user['_id'])
+                session['username'] = user['username']
+                session['role'] = user.get('role', 'user')
+                flash("Login successfully!", 'success')
+                return redirect(url_for('index'))
+            else:
+                flash('Invalid username or password!', 'error')
     return render_template('login.html')
 
 @app.route('/logout')
