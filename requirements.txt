@@ -4,3 +4,7 @@ python-dotenv
 werkzeug
 pandas
 xlsxwriter
+<<<<<<< HEAD
+=======
+gunicorn
+>>>>>>> ca9f1c5394f21e28099b816ccbd8a8867649d5b7

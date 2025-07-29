@@ -7,8 +7,6 @@ A comprehensive web application for managing event sponsors, partners, vendors, 
 
 ### 🔐 Admin Authentication
 - Secure login system for admin users
-- Session management
-- Default credentials: `admin` / `admin123` (change in production)
 
 ### 👥 Entity Management
 The application provides CRUD operations for four main entity types:
@@ -98,7 +96,6 @@ The application provides CRUD operations for four main entity types:
 
 6. **Access the application**
    - Open your browser and go to `http://localhost:5000`
-   - Login with default credentials: `admin` / `admin123`
 
 ## Deployment to GitHub + Heroku
 
@@ -147,14 +144,6 @@ The application provides CRUD operations for four main entity types:
 ## Security Considerations
 
 ### For Production Use:
-1. **Change default credentials**:
-   ```python
-   # In app.py, update DEFAULT_ADMIN
-   DEFAULT_ADMIN = {
-       'username': 'your-admin-username',
-       'password': generate_password_hash('your-secure-password'),
-       'role': 'admin'
-   }
    ```
 
 2. **Use environment variables**:
