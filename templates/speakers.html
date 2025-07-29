@@ -61,12 +61,14 @@
         <div class="action-section">
             <h3><i class="fas fa-list"></i> All Speakers</h3>
             <div style="display:flex; gap:16px; margin-bottom:16px;">
+                {% if is_admin %}
                 <button onclick="loadAllSpeakers()" class="btn btn-info">
                     <i class="fas fa-eye"></i> Show All Speakers
                 </button>
                 <button onclick="downloadAllSpeakers()" class="btn btn-success">
                     <i class="fas fa-download"></i> Download All Speakers
                 </button>
+                {% endif %}
             </div>
             <div id="speakersList" class="results-list" style="margin-top:24px;"></div>
         </div>
@@ -75,7 +77,6 @@
 
 <div id="editSpeakerModal" class="modal" style="display:none;">
     <div class="modal-content card-style">
-        <span class="close" onclick="closeEditSpeakerModal()">&times;</span>
         <h3 style="text-align:center; margin-bottom:18px;">Edit Speaker</h3>
         <form id="editSpeakerForm" style="padding: 0 12px;">
             <input type="hidden" id="editSpeakerId">
@@ -107,9 +108,12 @@
                     </div>
                 </div>
             </div>
-            <div style="text-align:center; margin-top:18px;">
-                <button type="submit" class="btn btn-success" style="width:60%; font-size:1.1em;">
+            <div style="text-align:center; margin-top:18px; display: flex; justify-content: center; gap: 16px;">
+                <button type="submit" class="btn btn-success" style="font-size:1.1em;">
                     <i class="fas fa-save"></i> Save Changes
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closeEditSpeakerModal()" style="font-size:1.1em;">
+                    <i class="fas fa-times"></i> Close
                 </button>
             </div>
         </form>
@@ -154,7 +158,9 @@
 
 {% block scripts %}
 <script>
+
 let currentSpeakers = [];
+const isAdmin = "{{ 'true' if is_admin else 'false' }}" === 'true';
 
 document.addEventListener('DOMContentLoaded', function() {
     loadSpeakerCount();
@@ -265,8 +271,8 @@ function displayAllSpeakersTable(speakers) {
             <td style="padding:10px 18px;">${s.linkedin ? `<a href="${s.linkedin}" target="_blank">${s.linkedin}</a>` : ''}</td>
             <td style="padding:10px 18px;">${s.designation || ''}</td>
             <td style="padding:10px 18px;">
-                <button class="btn btn-warning btn-sm" onclick="editSpeaker('${s._id}')"><i class="fas fa-edit"></i> Edit</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteSpeaker('${s._id}')"><i class="fas fa-trash"></i> Delete</button>
+                ${isAdmin ? `<button class=\"btn btn-warning btn-sm\" onclick=\"editSpeaker('${s._id}')\"><i class=\"fas fa-edit\"></i> Edit</button>
+                <button class=\"btn btn-danger btn-sm\" onclick=\"deleteSpeaker('${s._id}')\"><i class=\"fas fa-trash\"></i> Delete</button>` : ''}
             </td>
         </tr>`;
     });
@@ -286,7 +292,12 @@ function editSpeaker(id) {
             document.getElementById('editSpeakerMail').value = s.mail || '';
             document.getElementById('editSpeakerLinkedin').value = s.linkedin || '';
             document.getElementById('editSpeakerDesignation').value = s.designation || '';
-            document.getElementById('editSpeakerModal').style.display = 'block';
+            const modal = document.getElementById('editSpeakerModal');
+            modal.style.display = 'block';
+            // Scroll to modal for better UX
+            setTimeout(() => {
+                modal.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
         });
 }
 
@@ -408,7 +419,11 @@ function showAlert(message, type) {
 }
 
 function downloadAllSpeakers() {
-    window.location.href = '/api/speakers/download';
+    if (isAdmin) {
+        window.location.href = '/api/speakers/download';
+    } else {
+        showAlert('Only admin can download speaker data.', 'warning');
+    }
 }
 </script>
 {% endblock %}

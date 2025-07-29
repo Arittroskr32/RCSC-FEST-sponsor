@@ -1,3 +1,4 @@
+from bson.objectid import ObjectId
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from werkzeug.security import check_password_hash, generate_password_hash
 from pymongo import MongoClient
@@ -33,10 +34,23 @@ DEFAULT_ADMIN = {
     'role': 'admin'
 }
 
+# Default moderator user (credentials from environment variables)
+MODERATOR_USERNAME = os.environ.get('NORMAL_USERNAME')
+MODERATOR_PASSWORD_RAW = os.environ.get('NORMAL_PASSWORD')
+DEFAULT_MODERATOR = {
+    'username': MODERATOR_USERNAME,
+    'password': generate_password_hash(MODERATOR_PASSWORD_RAW),
+    'role': 'moderator'
+}
+
 def init_admin():
     """Initialize default admin user if not exists"""
-    if not users_collection.find_one({'username': DEFAULT_ADMIN['username']}):
+    # Add admin if not exists
+    if DEFAULT_ADMIN['username'] and not users_collection.find_one({'username': DEFAULT_ADMIN['username']}):
         users_collection.insert_one(DEFAULT_ADMIN)
+    # Add moderator if not exists
+    if DEFAULT_MODERATOR['username'] and not users_collection.find_one({'username': DEFAULT_MODERATOR['username']}):
+        users_collection.insert_one(DEFAULT_MODERATOR)
 
 @app.before_request
 def before_request():
@@ -59,7 +73,8 @@ def login():
         if user and check_password_hash(user['password'], password):
             session['user_id'] = str(user['_id'])
             session['username'] = user['username']
-            flash('Login successful!', 'success')
+            session['role'] = user.get('role', 'user')
+            flash(f"Login successfully!", 'success')
             return redirect(url_for('index'))
         else:
             flash('Invalid username or password!', 'error')
@@ -81,23 +96,48 @@ def login_required(f):
     decorated_function.__name__ = f.__name__
     return decorated_function
 
+# API to get sponsor details by ID
+@app.route('/api/sponsors/<sponsor_id>', methods=['GET'])
+@login_required
+def get_sponsor_details(sponsor_id):
+    try:
+        sponsor = sponsors_collection.find_one({'_id': ObjectId(sponsor_id)})
+        if not sponsor:
+            return jsonify({'error': 'Sponsor not found'}), 404
+        sponsor['_id'] = str(sponsor['_id'])
+        return jsonify(sponsor)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # Sponsor management routes
 @app.route('/sponsors')
 @login_required
 def sponsors():
-    return render_template('sponsors.html')
+    from os import environ
+    admin_username = environ.get('ADMIN_USERNAME')
+    is_admin = session.get('username') == admin_username
+    moderator_only = not is_admin
+    return render_template('sponsors.html', is_admin=is_admin, moderator_only=moderator_only)
 
 # Alumni management routes
 @app.route('/alumni')
 @login_required
 def alumni():
-    return render_template('alumni.html')
+    from os import environ
+    admin_username = environ.get('ADMIN_USERNAME')
+    is_admin = session.get('username') == admin_username
+    moderator_only = not is_admin
+    return render_template('alumni.html', is_admin=is_admin, moderator_only=moderator_only)
 
 # Speaker management routes
 @app.route('/speakers')
 @login_required
 def speakers():
-    return render_template('speakers.html')
+    from os import environ
+    admin_username = environ.get('ADMIN_USERNAME')
+    is_admin = session.get('username') == admin_username
+    moderator_only = not is_admin
+    return render_template('speakers.html', is_admin=is_admin, moderator_only=moderator_only)
 
 @app.route('/api/sponsors/search', methods=['POST'])
 @login_required
@@ -108,7 +148,8 @@ def search_sponsors():
         sponsors = list(sponsors_collection.find({
             '$or': [
                 {'company_name': regex},
-                {'website': regex}
+                {'website': regex},
+                {'sponsor_mail': regex}
             ]
         }))
         # Only return required fields
@@ -117,7 +158,8 @@ def search_sponsors():
             filtered.append({
                 'company_name': sponsor.get('company_name', ''),
                 'previous_sponsor': sponsor.get('previous_sponsor', ''),
-                'website': sponsor.get('website', '')
+                'website': sponsor.get('website', ''),
+                'sponsor_mail': sponsor.get('sponsor_mail', '')
             })
         sponsors = filtered
     else:
@@ -127,39 +169,25 @@ def search_sponsors():
 @app.route('/api/sponsors/add', methods=['POST'])
 @login_required
 def add_sponsor():
+    if session.get('role') not in ['admin', 'moderator']:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+    # Required fields
+    company_name = request.json.get('company_name', '').strip()
+    website = request.json.get('website', '').strip()
+    sponsor_mail = request.json.get('sponsor_mail', '').strip()
+    category = request.json.get('category', '').strip()
+    # Basic validation for required fields
+    if not company_name or not website or not sponsor_mail or not category:
+        return jsonify({'success': False, 'message': 'Missing required fields'}), 400
     try:
         sponsor_data = {
-            'company_name': request.json.get('company_name'),
-            'cto_phone': request.json.get('cto_phone') or None,
-            'ceo_phone': request.json.get('ceo_phone'),
-            'ceo_mail': request.json.get('ceo_mail'),
-            'previous_sponsor': request.json.get('previous_sponsor') if request.json.get('previous_sponsor') in ['yes', 'no', 'not idea'] else None,
-            'website': request.json.get('website'),
-            'sponsor_mail': request.json.get('sponsor_mail'),
-            'ruetian_name': request.json.get('ruetian_name') or None,
-            'ruetian_phone': request.json.get('ruetian_phone') or None,
-            'ruetian_mail': request.json.get('ruetian_mail') or None,
-            'ruetian_linkedin': request.json.get('ruetian_linkedin'),
-            'category': request.json.get('category'),
-            'other_category': request.json.get('other_category') if request.json.get('category') == 'others' else None,
-            'created_at': datetime.now(),
-            'created_by': session['username']
+            'company_name': company_name,
+            'website': website,
+            'sponsor_mail': sponsor_mail,
+            'category': category,
+            'created_at': datetime.utcnow(),
+            'created_by': session.get('username')
         }
-
-        # Check if sponsor already exists (by company_name, cto_phone, or sponsor_mail)
-        duplicate_query = {
-            '$or': [
-                {'company_name': sponsor_data['company_name']},
-                {'cto_phone': sponsor_data['cto_phone']} if sponsor_data['cto_phone'] else {},
-                {'sponsor_mail': sponsor_data['sponsor_mail']}
-            ]
-        }
-        # Remove empty dicts from $or
-        duplicate_query['$or'] = [q for q in duplicate_query['$or'] if q]
-        existing = sponsors_collection.find_one(duplicate_query)
-        if existing:
-            return jsonify({'success': False, 'message': 'Company already exists.'}), 400
-
         result = sponsors_collection.insert_one(sponsor_data)
         return jsonify({'success': True, 'message': 'Sponsor added successfully', 'id': str(result.inserted_id)})
     except Exception as e:
@@ -168,6 +196,8 @@ def add_sponsor():
 @app.route('/api/sponsors/list')
 @login_required
 def list_sponsors():
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
     try:
         sponsors = list(sponsors_collection.find().sort('created_at', -1))
         filtered = []
@@ -188,6 +218,8 @@ import pandas as pd
 @app.route('/api/sponsors/download')
 @login_required
 def download_sponsors():
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
     try:
         sponsors = list(sponsors_collection.find().sort('created_at', -1))
         data = []
@@ -230,23 +262,30 @@ def count_sponsors():
 @app.route('/api/sponsors/delete/<sponsor_id>', methods=['DELETE'])
 @login_required
 def delete_sponsor(sponsor_id):
+    if session.get('role') != 'admin':
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     try:
         from bson.objectid import ObjectId
         result = sponsors_collection.delete_one({'_id': ObjectId(sponsor_id)})
-        
         if result.deleted_count:
             return jsonify({'success': True, 'message': 'Sponsor deleted successfully'})
         else:
             return jsonify({'success': False, 'message': 'Sponsor not found'}), 404
-    
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 @app.route('/api/sponsors/update/<sponsor_id>', methods=['PUT'])
 @login_required
 def update_sponsor(sponsor_id):
+    if session.get('role') != 'admin':
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 403
     try:
         from bson.objectid import ObjectId
         update_data = request.json
+        # Website must be filled
+        website = update_data.get('website', '').strip()
+        if not website:
+            return jsonify({'success': False, 'message': 'Website is required'}), 400
+        # CTO Phone is optional, no validation needed
         result = sponsors_collection.update_one(
             {'_id': ObjectId(sponsor_id)},
             {'$set': update_data}
@@ -298,60 +337,40 @@ def create_entity_routes(entity_name, collection):
     @app.route(f'/api/{entity_name}/add', methods=['POST'], endpoint=f'add_{entity_name}')
     @login_required
     def add_entity():
+        # Only allow admin or moderator to add
+        from os import environ
+        admin_username = environ.get('ADMIN_USERNAME')
+        is_admin = session.get('username') == admin_username
+        if entity_name == 'alumni' and not (is_admin or session.get('role') == 'moderator'):
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 403
+        if entity_name == 'speakers' and not (is_admin or session.get('role') == 'moderator'):
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 403
         try:
             # Ensure JSON body
             if not request.is_json:
                 return jsonify({'success': False, 'message': 'Request must be JSON'}), 400
             data = request.get_json()
+            # Basic validation for required fields
             if entity_name == 'speakers':
-                entity_data = {
-                    'name': data.get('name'),
-                    'phone': data.get('phone') or None,
-                    'mail': data.get('mail') or None,
-                    'linkedin': data.get('linkedin'),
-                    'designation': data.get('designation'),
-                    'created_at': datetime.now(),
-                    'created_by': session['username']
-                }
-                existing = collection.find_one({
-                    '$or': [
-                        {'mail': entity_data.get('mail')},
-                        {'name': entity_data.get('name')},
-                        {'linkedin': entity_data.get('linkedin')}
-                    ]
-                })
-            else:
-                entity_data = {
-                    'ruetian_name': data.get('ruetian_name'),
-                    'ruetian_phone': data.get('ruetian_phone') or None,
-                    'ruetian_mail': data.get('ruetian_mail'),
-                    'ruetian_linkedin': data.get('ruetian_linkedin'),
-                    'created_at': datetime.now(),
-                    'created_by': session['username']
-                }
-                existing = collection.find_one({
-                    '$or': [
-                        {'ruetian_mail': entity_data.get('ruetian_mail')},
-                        {'ruetian_name': entity_data.get('ruetian_name')},
-                        {'ruetian_linkedin': entity_data.get('ruetian_linkedin')}
-                    ]
-                })
-            if existing:
-                if entity_name == 'speakers':
-                    return jsonify({'success': False, 'message': "Speaker already exists (name, mail, or linkedin)"}), 400
-                else:
-                    return jsonify({'success': False, 'message': "Alumni already exists (name, mail, or linkedin)"}), 400
-            result = collection.insert_one(entity_data)
-            if entity_name == 'speakers':
-                return jsonify({'success': True, 'message': "Speaker added successfully!", 'id': str(result.inserted_id)})
-            else:
-                return jsonify({'success': True, 'message': "Alumni added successfully!", 'id': str(result.inserted_id)})
+                required_fields = ['name', 'linkedin', 'designation']
+                for field in required_fields:
+                    if not data.get(field):
+                        return jsonify({'success': False, 'message': f'Missing required field: {field}'}), 400
+            # Insert into collection
+            result = collection.insert_one(data)
+            return jsonify({'success': True, 'message': f'{entity_name.title()[:-1]} added successfully', 'id': str(result.inserted_id)})
         except Exception as e:
             return jsonify({'success': False, 'message': str(e)}), 500
 
     @app.route(f'/api/{entity_name}/list', endpoint=f'list_{entity_name}')
     @login_required
     def list_entities():
+        from os import environ
+        admin_username = environ.get('ADMIN_USERNAME')
+        is_admin = session.get('username') == admin_username
+        # Only admin can list for alumni and speakers
+        if entity_name in ['alumni', 'speakers'] and not is_admin:
+            return jsonify({'error': 'Unauthorized'}), 403
         try:
             entities = list(collection.find().sort('created_at', -1))
             for entity in entities:
@@ -362,35 +381,54 @@ def create_entity_routes(entity_name, collection):
     @app.route(f'/api/{entity_name}/download', endpoint=f'download_{entity_name}')
     @login_required
     def download_entities():
+        from os import environ
+        admin_username = environ.get('ADMIN_USERNAME')
+        is_admin = session.get('username') == admin_username
+        # Only admin can download for alumni and speakers
+        if entity_name in ['alumni', 'speakers'] and not is_admin:
+            return jsonify({'error': 'Unauthorized'}), 403
         try:
             entities = list(collection.find().sort('created_at', -1))
             data = []
+            if entity_name == 'alumni':
+                for a in entities:
+                    data.append({
+                        'Ruetian Name': a.get('ruetian_name', ''),
+                        'Ruetian Phone': a.get('ruetian_phone', ''),
+                        'Ruetian Mail': a.get('ruetian_mail', ''),
+                        'Ruetian LinkedIn': a.get('ruetian_linkedin', ''),
+                        'Created At': a.get('created_at', '').strftime('%Y-%m-%d %H:%M:%S') if a.get('created_at') else '',
+                        'Created By': a.get('created_by', '')
+                    })
+                import io
+                import pandas as pd
+                from flask import send_file
+                df = pd.DataFrame(data)
+                output = io.BytesIO()
+                with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                    df.to_excel(writer, index=False, sheet_name='Alumni')
+                output.seek(0)
+                return send_file(output, download_name='alumni_list.xlsx', as_attachment=True, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
             if entity_name == 'speakers':
-                for entity in entities:
+                for s in entities:
                     data.append({
-                        'Name': entity.get('name', ''),
-                        'Phone': entity.get('phone', ''),
-                        'Mail': entity.get('mail', ''),
-                        'LinkedIn': entity.get('linkedin', ''),
-                        'Designation': entity.get('designation', ''),
-                        'Created At': entity.get('created_at', '').strftime('%Y-%m-%d %H:%M:%S') if entity.get('created_at') else ''
+                        'Name': s.get('name', ''),
+                        'Phone': s.get('phone', ''),
+                        'Mail': s.get('mail', ''),
+                        'LinkedIn': s.get('linkedin', ''),
+                        'Designation': s.get('designation', ''),
+                        'Created At': s.get('created_at', '').strftime('%Y-%m-%d %H:%M:%S') if s.get('created_at') else '',
+                        'Created By': s.get('created_by', '')
                     })
-            else:
-                for entity in entities:
-                    data.append({
-                        'Ruetian Name': entity.get('ruetian_name', ''),
-                        'Ruetian Phone': entity.get('ruetian_phone', ''),
-                        'Ruetian Mail': entity.get('ruetian_mail', ''),
-                        'Ruetian LinkedIn': entity.get('ruetian_linkedin', ''),
-                        'Created At': entity.get('created_at', '').strftime('%Y-%m-%d %H:%M:%S') if entity.get('created_at') else ''
-                    })
-            from flask import send_file
-            df = pd.DataFrame(data)
-            output = io.BytesIO()
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                df.to_excel(writer, index=False, sheet_name=entity_name.title())
-            output.seek(0)
-            return send_file(output, download_name=f'{entity_name}_list.xlsx', as_attachment=True, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                import io
+                import pandas as pd
+                from flask import send_file
+                df = pd.DataFrame(data)
+                output = io.BytesIO()
+                with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                    df.to_excel(writer, index=False, sheet_name='Speakers')
+                output.seek(0)
+                return send_file(output, download_name='speakers_list.xlsx', as_attachment=True, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 
@@ -406,6 +444,12 @@ def create_entity_routes(entity_name, collection):
     @app.route(f'/api/{entity_name}/delete/<entity_id>', methods=['DELETE'], endpoint=f'delete_{entity_name}')
     @login_required
     def delete_entity(entity_id):
+        from os import environ
+        admin_username = environ.get('ADMIN_USERNAME')
+        is_admin = session.get('username') == admin_username
+        # Only admin can delete for alumni and speakers
+        if entity_name in ['alumni', 'speakers'] and not is_admin:
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 403
         try:
             from bson.objectid import ObjectId
             result = collection.delete_one({'_id': ObjectId(entity_id)})
@@ -418,6 +462,12 @@ def create_entity_routes(entity_name, collection):
     @app.route(f'/api/{entity_name}/update/<entity_id>', methods=['PUT'], endpoint=f'update_{entity_name}')
     @login_required
     def update_entity(entity_id):
+        from os import environ
+        admin_username = environ.get('ADMIN_USERNAME')
+        is_admin = session.get('username') == admin_username
+        # Only admin can update for alumni and speakers
+        if entity_name in ['alumni', 'speakers'] and not is_admin:
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 403
         try:
             from bson.objectid import ObjectId
             update_data = request.json

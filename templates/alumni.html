@@ -58,12 +58,14 @@
         <div class="action-section">
             <h3><i class="fas fa-list"></i> All Alumni</h3>
             <div style="display:flex; gap:16px; margin-bottom:16px;">
+                {% if is_admin %}
                 <button onclick="loadAllAlumni()" class="btn btn-info">
                     <i class="fas fa-eye"></i> Show All Alumni
                 </button>
                 <button onclick="downloadAllAlumni()" class="btn btn-success">
                     <i class="fas fa-download"></i> Download All Alumni
                 </button>
+                {% endif %}
             </div>
             <div id="alumniList" class="results-list" style="margin-top:24px;"></div>
         </div>
@@ -72,7 +74,6 @@
 
 <div id="editAlumniModal" class="modal" style="display:none;">
     <div class="modal-content card-style">
-        <span class="close" onclick="closeEditAlumniModal()">&times;</span>
         <h3 style="text-align:center; margin-bottom:18px;">Edit Alumni</h3>
         <form id="editAlumniForm" style="padding: 0 12px;">
             <input type="hidden" id="editAlumniId">
@@ -98,9 +99,12 @@
                     </div>
                 </div>
             </div>
-            <div style="text-align:center; margin-top:18px;">
-                <button type="submit" class="btn btn-success" style="width:60%; font-size:1.1em;">
+            <div style="text-align:center; margin-top:18px; display: flex; justify-content: center; gap: 16px;">
+                <button type="submit" class="btn btn-success" style="font-size:1.1em;">
                     <i class="fas fa-save"></i> Save Changes
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closeEditAlumniModal()" style="font-size:1.1em;">
+                    <i class="fas fa-times"></i> Close
                 </button>
             </div>
         </form>
@@ -145,7 +149,9 @@
 
 {% block scripts %}
 <script>
+
 let currentAlumni = [];
+const isAdmin = "{{ 'true' if is_admin else 'false' }}" === 'true';
 
 document.addEventListener('DOMContentLoaded', function() {
     loadAlumniCount();
@@ -255,8 +261,8 @@ function displayAllAlumniTable(alumni) {
             <td style="padding:10px 18px;">${a.ruetian_mail || ''}</td>
             <td style="padding:10px 18px;">${a.ruetian_linkedin ? `<a href="${a.ruetian_linkedin}" target="_blank">${a.ruetian_linkedin}</a>` : ''}</td>
             <td style="padding:10px 18px;">
-                <button class="btn btn-warning btn-sm" onclick="editAlumni('${a._id}')"><i class="fas fa-edit"></i> Edit</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteAlumni('${a._id}')"><i class="fas fa-trash"></i> Delete</button>
+                ${isAdmin ? `<button class=\"btn btn-warning btn-sm\" onclick=\"editAlumni('${a._id}')\"><i class=\"fas fa-edit\"></i> Edit</button>
+                <button class=\"btn btn-danger btn-sm\" onclick=\"deleteAlumni('${a._id}')\"><i class=\"fas fa-trash\"></i> Delete</button>` : ''}
             </td>
         </tr>`;
     });
@@ -275,7 +281,12 @@ function editAlumni(id) {
             document.getElementById('editRuetianPhone').value = a.ruetian_phone || '';
             document.getElementById('editRuetianMail').value = a.ruetian_mail || '';
             document.getElementById('editRuetianLinkedin').value = a.ruetian_linkedin || '';
-            document.getElementById('editAlumniModal').style.display = 'block';
+            const modal = document.getElementById('editAlumniModal');
+            modal.style.display = 'block';
+            // Scroll to modal for better UX
+            setTimeout(() => {
+                modal.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
         });
 }
 
@@ -397,7 +408,11 @@ function showAlert(message, type) {
 }
 
 function downloadAllAlumni() {
-    window.location.href = '/api/alumni/download';
+    if (isAdmin) {
+        window.location.href = '/api/alumni/download';
+    } else {
+        showAlert('Only admin can download alumni data.', 'warning');
+    }
 }
 </script>
 {% endblock %}
