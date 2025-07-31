@@ -232,40 +232,62 @@ def download_sponsors():
         for sponsor in sponsors:
             # Initialize contact fields
             contact_data = {
+                'CEO Name': '',
                 'CEO Phone': '',
                 'CEO Mail': '',
+                'CEO LinkedIn': '',
+                'CTO Name': '',
                 'CTO Phone': '',
                 'CTO Mail': '',
+                'CTO LinkedIn': '',
+                'Brand Manager Name': '',
                 'Brand Manager Phone': '',
                 'Brand Manager Mail': '',
+                'Brand Manager LinkedIn': '',
+                'Sponsor Manager Name': '',
                 'Sponsor Manager Phone': '',
                 'Sponsor Manager Mail': '',
+                'Sponsor Manager LinkedIn': '',
+                'HR Name': '',
                 'HR Phone': '',
-                'HR Mail': ''
+                'HR Mail': '',
+                'HR LinkedIn': ''
             }
             
             # Fill contact data from contacts array
             if sponsor.get('contacts'):
                 for contact in sponsor['contacts']:
                     role = contact.get('role', '')
+                    name = contact.get('name', '')
                     phone = contact.get('phone', '')
                     mail = contact.get('mail', '')
+                    linkedin = contact.get('linkedin', '')
                     
                     if role == 'CEO':
+                        contact_data['CEO Name'] = name
                         contact_data['CEO Phone'] = phone
                         contact_data['CEO Mail'] = mail
+                        contact_data['CEO LinkedIn'] = linkedin
                     elif role == 'CTO':
+                        contact_data['CTO Name'] = name
                         contact_data['CTO Phone'] = phone
                         contact_data['CTO Mail'] = mail
+                        contact_data['CTO LinkedIn'] = linkedin
                     elif role == 'Brand Manager':
+                        contact_data['Brand Manager Name'] = name
                         contact_data['Brand Manager Phone'] = phone
                         contact_data['Brand Manager Mail'] = mail
+                        contact_data['Brand Manager LinkedIn'] = linkedin
                     elif role == 'Sponsor Manager':
+                        contact_data['Sponsor Manager Name'] = name
                         contact_data['Sponsor Manager Phone'] = phone
                         contact_data['Sponsor Manager Mail'] = mail
+                        contact_data['Sponsor Manager LinkedIn'] = linkedin
                     elif role == 'HR':
+                        contact_data['HR Name'] = name
                         contact_data['HR Phone'] = phone
                         contact_data['HR Mail'] = mail
+                        contact_data['HR LinkedIn'] = linkedin
             
             # Initialize ruetian fields (up to 5 ruetians)
             ruetian_data = {}

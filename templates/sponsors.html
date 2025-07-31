@@ -70,6 +70,10 @@
                                         <option value="HR">HR</option>
                                     </select>
                                 </div>
+                                <div class="form-group contact-fields" id="contactName1" style="display:none;">
+                                    <label for="contactName1">Name (optional)</label>
+                                    <input type="text" id="contactName1" name="contact_names[]">
+                                </div>
                                 <div class="form-group contact-fields" id="contactFields1" style="display:none;">
                                     <label for="contactPhone1">Phone (optional)</label>
                                     <input type="tel" id="contactPhone1" name="contact_phones[]">
@@ -77,6 +81,10 @@
                                 <div class="form-group contact-fields" id="contactMail1" style="display:none;">
                                     <label for="contactMail1">Mail (optional)</label>
                                     <input type="email" id="contactMail1" name="contact_mails[]">
+                                </div>
+                                <div class="form-group contact-fields" id="contactLinkedIn1" style="display:none;">
+                                    <label for="contactLinkedIn1">LinkedIn (optional)</label>
+                                    <input type="url" id="contactLinkedIn1" name="contact_linkedins[]">
                                 </div>
                             </div>
                         </div>
@@ -471,7 +479,7 @@ function editSponsor(id) {
             contactsContainer.innerHTML = '';
             if (sponsor.contacts && sponsor.contacts.length > 0) {
                 sponsor.contacts.forEach((contact, index) => {
-                    addEditContact(contact.role, contact.phone, contact.mail);
+                    addEditContact(contact.role, contact.name, contact.phone, contact.mail, contact.linkedin);
                 });
             } else {
                 addEditContact(); // Add one empty contact field
@@ -513,10 +521,12 @@ document.getElementById('editSponsorForm').addEventListener('submit', async func
     const editContactDivs = editContactsContainer.querySelectorAll('.contact-group');
     editContactDivs.forEach(contactDiv => {
         const role = contactDiv.querySelector('select[name="edit_roles[]"]').value;
+        const name = contactDiv.querySelector('input[name="edit_contact_names[]"]').value;
         const phone = contactDiv.querySelector('input[name="edit_contact_phones[]"]').value;
         const mail = contactDiv.querySelector('input[name="edit_contact_mails[]"]').value;
+        const linkedin = contactDiv.querySelector('input[name="edit_contact_linkedins[]"]').value;
         if (role) {
-            editContacts.push({ role, phone, mail });
+            editContacts.push({ role, name, phone, mail, linkedin });
         }
     });
     
@@ -579,12 +589,16 @@ async function addSponsor() {
     
     // Collect multiple contacts
     const roles = formData.getAll('roles[]').filter(role => role);
+    const names = formData.getAll('contact_names[]');
     const phones = formData.getAll('contact_phones[]');
     const mails = formData.getAll('contact_mails[]');
+    const linkedins = formData.getAll('contact_linkedins[]');
     const contacts = roles.map((role, index) => ({
         role: role,
+        name: names[index] || '',
         phone: phones[index] || '',
-        mail: mails[index] || ''
+        mail: mails[index] || '',
+        linkedin: linkedins[index] || ''
     }));
     
     // Collect multiple ruetians
@@ -761,14 +775,20 @@ let editContactCount = 1;
 let editRuetianCount = 1;
 
 function toggleContactFields(select, index) {
+    const nameField = document.getElementById(`contactName${index}`);
     const phoneField = document.getElementById(`contactFields${index}`);
     const mailField = document.getElementById(`contactMail${index}`);
+    const linkedinField = document.getElementById(`contactLinkedIn${index}`);
     if (select.value) {
+        nameField.style.display = 'block';
         phoneField.style.display = 'block';
         mailField.style.display = 'block';
+        linkedinField.style.display = 'block';
     } else {
+        nameField.style.display = 'none';
         phoneField.style.display = 'none';
         mailField.style.display = 'none';
+        linkedinField.style.display = 'none';
     }
 }
 
@@ -790,6 +810,10 @@ function addContactField() {
                     <option value="HR">HR</option>
                 </select>
             </div>
+            <div class="form-group contact-fields" id="contactName${contactCount}" style="display:none;">
+                <label for="contactName${contactCount}">Name (optional)</label>
+                <input type="text" id="contactName${contactCount}" name="contact_names[]">
+            </div>
             <div class="form-group contact-fields" id="contactFields${contactCount}" style="display:none;">
                 <label for="contactPhone${contactCount}">Phone (optional)</label>
                 <input type="tel" id="contactPhone${contactCount}" name="contact_phones[]">
@@ -797,6 +821,10 @@ function addContactField() {
             <div class="form-group contact-fields" id="contactMail${contactCount}" style="display:none;">
                 <label for="contactMail${contactCount}">Mail (optional)</label>
                 <input type="email" id="contactMail${contactCount}" name="contact_mails[]">
+            </div>
+            <div class="form-group contact-fields" id="contactLinkedIn${contactCount}" style="display:none;">
+                <label for="contactLinkedIn${contactCount}">LinkedIn (optional)</label>
+                <input type="url" id="contactLinkedIn${contactCount}" name="contact_linkedins[]">
             </div>
             <div class="form-group">
                 <button type="button" onclick="removeContactField(this)" class="btn btn-danger btn-sm">Remove</button>
@@ -811,7 +839,7 @@ function removeContactField(button) {
 }
 
 // Edit modal contact functions
-function addEditContact(role = '', phone = '', mail = '') {
+function addEditContact(role = '', name = '', phone = '', mail = '', linkedin = '') {
     editContactCount++;
     const container = document.getElementById('editContactsContainer');
     const newContact = document.createElement('div');
@@ -830,12 +858,20 @@ function addEditContact(role = '', phone = '', mail = '') {
                 </select>
             </div>
             <div class="form-group">
+                <label>Name (optional)</label>
+                <input type="text" name="edit_contact_names[]" value="${name}">
+            </div>
+            <div class="form-group">
                 <label>Phone (optional)</label>
                 <input type="tel" name="edit_contact_phones[]" value="${phone}">
             </div>
             <div class="form-group">
                 <label>Mail (optional)</label>
                 <input type="email" name="edit_contact_mails[]" value="${mail}">
+            </div>
+            <div class="form-group">
+                <label>LinkedIn (optional)</label>
+                <input type="url" name="edit_contact_linkedins[]" value="${linkedin}">
             </div>
             <div class="form-group">
                 <button type="button" onclick="removeEditContact(this)" class="btn btn-danger btn-sm">Remove</button>
