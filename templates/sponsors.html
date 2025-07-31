@@ -37,18 +37,6 @@
                         <label for="companyName">Company Name *</label>
                         <input type="text" id="companyName" name="company_name" required>
                     </div>
-                    <div class="form-group">
-                        <label for="ctoPhone">CTO Phone (optional)</label>
-                        <input type="tel" id="ctoPhone" name="cto_phone">
-                    </div>
-                    <div class="form-group">
-                        <label for="ceoPhone">CEO Phone (optional)</label>
-                        <input type="tel" id="ceoPhone" name="ceo_phone">
-                    </div>
-                    <div class="form-group">
-                        <label for="ceoMail">CEO Mail (optional)</label>
-                        <input type="email" id="ceoMail" name="ceo_mail">
-                    </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -64,31 +52,68 @@
                         <input type="url" id="website" name="website" required>
                     </div>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="sponsorMail">Sponsor Mail *</label>
-                        <input type="email" id="sponsorMail" name="sponsor_mail" required>
+                
+                <!-- Role-based contacts section -->
+                <div class="form-section">
+                    <h4>Contact Information</h4>
+                    <div id="contactsContainer">
+                        <div class="contact-item">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="role1">Role</label>
+                                    <select id="role1" name="roles[]" onchange="toggleContactFields(this, 1)">
+                                        <option value="">Select Role</option>
+                                        <option value="CEO">CEO</option>
+                                        <option value="CTO">CTO</option>
+                                        <option value="Brand Manager">Brand Manager</option>
+                                        <option value="Sponsor Manager">Sponsor Manager</option>
+                                        <option value="HR">HR</option>
+                                    </select>
+                                </div>
+                                <div class="form-group contact-fields" id="contactFields1" style="display:none;">
+                                    <label for="contactPhone1">Phone (optional)</label>
+                                    <input type="tel" id="contactPhone1" name="contact_phones[]">
+                                </div>
+                                <div class="form-group contact-fields" id="contactMail1" style="display:none;">
+                                    <label for="contactMail1">Mail (optional)</label>
+                                    <input type="email" id="contactMail1" name="contact_mails[]">
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                    <button type="button" onclick="addContactField()" class="btn btn-secondary">
+                        <i class="fas fa-plus"></i> Add Another Contact
+                    </button>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="ruetianName">Ruetian Name</label>
-                        <input type="text" id="ruetianName" name="ruetian_name">
+                
+                <!-- Ruetian information section -->
+                <div class="form-section">
+                    <h4>Ruetian Information (Optional)</h4>
+                    <div id="ruetiansContainer">
+                        <div class="ruetian-item">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="ruetianName1">Ruetian Name</label>
+                                    <input type="text" id="ruetianName1" name="ruetian_names[]">
+                                </div>
+                                <div class="form-group">
+                                    <label for="ruetianPhone1">Ruetian Phone</label>
+                                    <input type="tel" id="ruetianPhone1" name="ruetian_phones[]">
+                                </div>
+                                <div class="form-group">
+                                    <label for="ruetianMail1">Ruetian Mail</label>
+                                    <input type="email" id="ruetianMail1" name="ruetian_mails[]">
+                                </div>
+                                <div class="form-group">
+                                    <label for="ruetianLinkedin1">Ruetian LinkedIn</label>
+                                    <input type="url" id="ruetianLinkedin1" name="ruetian_linkedins[]">
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="ruetianPhone">Ruetian Phone</label>
-                        <input type="tel" id="ruetianPhone" name="ruetian_phone">
-                    </div>
-                    <div class="form-group">
-                        <label for="ruetianMail">Ruetian Mail</label>
-                        <input type="email" id="ruetianMail" name="ruetian_mail">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="ruetianLinkedin">Ruetian LinkedIn Profile</label>
-                        <input type="url" id="ruetianLinkedin" name="ruetian_linkedin">
-                    </div>
+                    <button type="button" onclick="addRuetianField()" class="btn btn-secondary">
+                        <i class="fas fa-plus"></i> Add Another Ruetian
+                    </button>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
@@ -144,22 +169,6 @@
                         <input type="text" id="editCompanyName" name="company_name" required>
                     </div>
                     <div class="form-group">
-                        <label for="editCtoPhone">CTO Phone (optional)</label>
-                        <input type="tel" id="editCtoPhone" name="cto_phone">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="editCeoPhone">CEO Phone (optional)</label>
-                        <input type="tel" id="editCeoPhone" name="ceo_phone">
-                    </div>
-                    <div class="form-group">
-                        <label for="editCeoMail">CEO Mail (optional)</label>
-                        <input type="email" id="editCeoMail" name="ceo_mail">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
                         <label>Previous Sponsor</label><br>
                         <div style="display: flex; gap: 20px; align-items: center;">
                             <label style="margin-bottom:0;"><input type="radio" name="edit_previous_sponsor" value="yes"> Yes</label>
@@ -167,37 +176,36 @@
                             <label style="margin-bottom:0;"><input type="radio" name="edit_previous_sponsor" value="not idea"> Not Idea</label>
                         </div>
                     </div>
+                </div>
+                <div class="form-row">
                     <div class="form-group">
                         <label for="editWebsite">Website *</label>
                         <input type="url" id="editWebsite" name="website" required>
                     </div>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="editSponsorMail">Sponsor Mail *</label>
-                        <input type="email" id="editSponsorMail" name="sponsor_mail" required>
+                
+                <!-- Contact Information Section -->
+                <div class="form-section">
+                    <h4 style="margin: 20px 0 10px 0; color: #333;">Contact Information</h4>
+                    <div id="editContactsContainer">
+                        <!-- Dynamic contact fields will be inserted here -->
                     </div>
+                    <button type="button" onclick="addEditContact()" class="btn btn-secondary" style="margin-top: 10px;">
+                        <i class="fas fa-plus"></i> Add Contact
+                    </button>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="editRuetianName">Ruetian Name</label>
-                        <input type="text" id="editRuetianName" name="ruetian_name">
+                
+                <!-- Ruetian Information Section -->
+                <div class="form-section">
+                    <h4 style="margin: 20px 0 10px 0; color: #333;">Ruetian Information</h4>
+                    <div id="editRuetiansContainer">
+                        <!-- Dynamic ruetian fields will be inserted here -->
                     </div>
-                    <div class="form-group">
-                        <label for="editRuetianPhone">Ruetian Phone</label>
-                        <input type="tel" id="editRuetianPhone" name="ruetian_phone">
-                    </div>
-                    <div class="form-group">
-                        <label for="editRuetianMail">Ruetian Mail</label>
-                        <input type="email" id="editRuetianMail" name="ruetian_mail">
-                    </div>
+                    <button type="button" onclick="addEditRuetian()" class="btn btn-secondary" style="margin-top: 10px;">
+                        <i class="fas fa-plus"></i> Add Ruetian
+                    </button>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="editRuetianLinkedin">Ruetian LinkedIn Profile</label>
-                        <input type="url" id="editRuetianLinkedin" name="ruetian_linkedin">
-                    </div>
-                </div>
+                
                 <div class="form-row">
                     <div class="form-group">
                         <label for="editCategory">Category *</label>
@@ -277,6 +285,31 @@
 .toast-error {
     background: #dc3545;
 }
+
+.form-section {
+    margin-bottom: 24px;
+    padding: 16px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: #f9f9f9;
+}
+
+.form-section h4 {
+    margin-bottom: 16px;
+    color: #333;
+}
+
+.contact-item, .ruetian-item {
+    margin-bottom: 12px;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #fff;
+}
+
+.contact-fields {
+    min-width: 150px;
+}
 </style>
 {% endblock %}
 
@@ -352,7 +385,6 @@ function displaySearchResults(sponsors) {
                 <th style="padding:12px 18px;">Company Name</th>
                 <th style="padding:12px 18px;">Previous Sponsor</th>
                 <th style="padding:12px 18px;">Website</th>
-                <th style="padding:12px 18px;">Sponsor Mail</th>
             </tr>
         </thead>
         <tbody>`;
@@ -361,7 +393,6 @@ function displaySearchResults(sponsors) {
             <td style="padding:10px 18px;">${sponsor.company_name || ''}</td>
             <td style="padding:10px 18px;">${sponsor.previous_sponsor || ''}</td>
             <td style="padding:10px 18px;">${sponsor.website ? `<a href="${sponsor.website}" target="_blank">${sponsor.website}</a>` : ''}</td>
-            <td style="padding:10px 18px;">${sponsor.sponsor_mail || ''}</td>
         </tr>`;
     });
     html += '</tbody></table></div>';
@@ -419,25 +450,47 @@ function editSponsor(id) {
         .then(response => response.json())
         .then(sponsor => {
             if (!sponsor || sponsor.error) return;
+            
+            // Reset edit counters
+            editContactCount = 1;
+            editRuetianCount = 1;
+            
             document.getElementById('editSponsorId').value = sponsor._id;
             document.getElementById('editCompanyName').value = sponsor.company_name || '';
-            document.getElementById('editCtoPhone').value = sponsor.cto_phone || '';
-            document.getElementById('editCeoPhone').value = sponsor.ceo_phone || '';
-            document.getElementById('editCeoMail').value = sponsor.ceo_mail || '';
             document.getElementById('editWebsite').value = sponsor.website || '';
-            document.getElementById('editSponsorMail').value = sponsor.sponsor_mail || '';
-            document.getElementById('editRuetianName').value = sponsor.ruetian_name || '';
-            document.getElementById('editRuetianPhone').value = sponsor.ruetian_phone || '';
-            document.getElementById('editRuetianMail').value = sponsor.ruetian_mail || '';
-            document.getElementById('editRuetianLinkedin').value = sponsor.ruetian_linkedin || '';
             document.getElementById('editCategory').value = sponsor.category || '';
             document.getElementById('editOtherCategory').value = sponsor.other_category || '';
+            
             // Set previous sponsor radio
             document.querySelectorAll('input[name="edit_previous_sponsor"]').forEach(radio => {
                 radio.checked = radio.value === (sponsor.previous_sponsor || '');
             });
+            
+            // Populate contacts
+            const contactsContainer = document.getElementById('editContactsContainer');
+            contactsContainer.innerHTML = '';
+            if (sponsor.contacts && sponsor.contacts.length > 0) {
+                sponsor.contacts.forEach((contact, index) => {
+                    addEditContact(contact.role, contact.phone, contact.mail);
+                });
+            } else {
+                addEditContact(); // Add one empty contact field
+            }
+            
+            // Populate ruetians
+            const ruetiansContainer = document.getElementById('editRuetiansContainer');
+            ruetiansContainer.innerHTML = '';
+            if (sponsor.ruetians && sponsor.ruetians.length > 0) {
+                sponsor.ruetians.forEach((ruetian, index) => {
+                    addEditRuetian(ruetian.name, ruetian.phone, ruetian.mail, ruetian.linkedin);
+                });
+            } else {
+                addEditRuetian(); // Add one empty ruetian field
+            }
+            
             toggleEditOtherCategory(document.getElementById('editCategory'));
             document.getElementById('editSponsorModal').style.display = 'block';
+            
             // Scroll to the modal card
             setTimeout(() => {
                 document.getElementById('editSponsorModal').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -453,21 +506,44 @@ document.getElementById('editSponsorForm').addEventListener('submit', async func
     if (!isAdmin) return;
     e.preventDefault();
     const id = document.getElementById('editSponsorId').value;
+    
+    // Collect contacts from edit form
+    const editContacts = [];
+    const editContactsContainer = document.getElementById('editContactsContainer');
+    const editContactDivs = editContactsContainer.querySelectorAll('.contact-group');
+    editContactDivs.forEach(contactDiv => {
+        const role = contactDiv.querySelector('select[name="edit_roles[]"]').value;
+        const phone = contactDiv.querySelector('input[name="edit_contact_phones[]"]').value;
+        const mail = contactDiv.querySelector('input[name="edit_contact_mails[]"]').value;
+        if (role) {
+            editContacts.push({ role, phone, mail });
+        }
+    });
+    
+    // Collect ruetians from edit form
+    const editRuetians = [];
+    const editRuetiansContainer = document.getElementById('editRuetiansContainer');
+    const editRuetianDivs = editRuetiansContainer.querySelectorAll('.ruetian-group');
+    editRuetianDivs.forEach(ruetianDiv => {
+        const name = ruetianDiv.querySelector('input[name="edit_ruetian_names[]"]').value;
+        const phone = ruetianDiv.querySelector('input[name="edit_ruetian_phones[]"]').value;
+        const mail = ruetianDiv.querySelector('input[name="edit_ruetian_mails[]"]').value;
+        const linkedin = ruetianDiv.querySelector('input[name="edit_ruetian_linkedins[]"]').value;
+        if (name) {
+            editRuetians.push({ name, phone, mail, linkedin });
+        }
+    });
+    
     const data = {
         company_name: document.getElementById('editCompanyName').value,
-        cto_phone: document.getElementById('editCtoPhone').value,
-        ceo_phone: document.getElementById('editCeoPhone').value,
-        ceo_mail: document.getElementById('editCeoMail').value,
         previous_sponsor: document.querySelector('input[name="edit_previous_sponsor"]:checked')?.value,
         website: document.getElementById('editWebsite').value,
-        sponsor_mail: document.getElementById('editSponsorMail').value,
-        ruetian_name: document.getElementById('editRuetianName').value,
-        ruetian_phone: document.getElementById('editRuetianPhone').value,
-        ruetian_mail: document.getElementById('editRuetianMail').value,
-        ruetian_linkedin: document.getElementById('editRuetianLinkedin').value,
+        contacts: editContacts,
+        ruetians: editRuetians,
         category: document.getElementById('editCategory').value,
         other_category: document.getElementById('editOtherCategory').value
     };
+    
     try {
         const response = await fetch(`/api/sponsors/update/${id}`, {
             method: 'PUT',
@@ -500,21 +576,39 @@ function toggleEditOtherCategory(select) {
 async function addSponsor() {
     const form = document.getElementById('addSponsorForm');
     const formData = new FormData(form);
+    
+    // Collect multiple contacts
+    const roles = formData.getAll('roles[]').filter(role => role);
+    const phones = formData.getAll('contact_phones[]');
+    const mails = formData.getAll('contact_mails[]');
+    const contacts = roles.map((role, index) => ({
+        role: role,
+        phone: phones[index] || '',
+        mail: mails[index] || ''
+    }));
+    
+    // Collect multiple ruetians
+    const ruetianNames = formData.getAll('ruetian_names[]').filter(name => name);
+    const ruetianPhones = formData.getAll('ruetian_phones[]');
+    const ruetianMails = formData.getAll('ruetian_mails[]');
+    const ruetianLinkedins = formData.getAll('ruetian_linkedins[]');
+    const ruetians = ruetianNames.map((name, index) => ({
+        name: name,
+        phone: ruetianPhones[index] || '',
+        mail: ruetianMails[index] || '',
+        linkedin: ruetianLinkedins[index] || ''
+    }));
+    
     const sponsorData = {
         company_name: formData.get('company_name'),
-        cto_phone: formData.get('cto_phone'),
-        ceo_phone: formData.get('ceo_phone'),
-        ceo_mail: formData.get('ceo_mail'),
         previous_sponsor: formData.get('previous_sponsor'),
         website: formData.get('website'),
-        sponsor_mail: formData.get('sponsor_mail'),
-        ruetian_name: formData.get('ruetian_name'),
-        ruetian_phone: formData.get('ruetian_phone'),
-        ruetian_mail: formData.get('ruetian_mail'),
-        ruetian_linkedin: formData.get('ruetian_linkedin'),
+        contacts: contacts,
+        ruetians: ruetians,
         category: formData.get('category'),
         other_category: formData.get('other_category')
     };
+    
     try {
         const response = await fetch('/api/sponsors/add', {
             method: 'POST',
@@ -528,6 +622,56 @@ async function addSponsor() {
             showAlert('Sponsor added successfully!', 'success');
             form.reset();
             document.getElementById('otherCategoryGroup').style.display = 'none';
+            // Reset dynamic fields
+            contactCount = 1;
+            ruetianCount = 1;
+            document.getElementById('contactsContainer').innerHTML = `
+                <div class="contact-item">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="role1">Role</label>
+                            <select id="role1" name="roles[]" onchange="toggleContactFields(this, 1)">
+                                <option value="">Select Role</option>
+                                <option value="CEO">CEO</option>
+                                <option value="CTO">CTO</option>
+                                <option value="Brand Manager">Brand Manager</option>
+                                <option value="Sponsor Manager">Sponsor Manager</option>
+                                <option value="HR">HR</option>
+                            </select>
+                        </div>
+                        <div class="form-group contact-fields" id="contactFields1" style="display:none;">
+                            <label for="contactPhone1">Phone (optional)</label>
+                            <input type="tel" id="contactPhone1" name="contact_phones[]">
+                        </div>
+                        <div class="form-group contact-fields" id="contactMail1" style="display:none;">
+                            <label for="contactMail1">Mail (optional)</label>
+                            <input type="email" id="contactMail1" name="contact_mails[]">
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('ruetiansContainer').innerHTML = `
+                <div class="ruetian-item">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="ruetianName1">Ruetian Name</label>
+                            <input type="text" id="ruetianName1" name="ruetian_names[]">
+                        </div>
+                        <div class="form-group">
+                            <label for="ruetianPhone1">Ruetian Phone</label>
+                            <input type="tel" id="ruetianPhone1" name="ruetian_phones[]">
+                        </div>
+                        <div class="form-group">
+                            <label for="ruetianMail1">Ruetian Mail</label>
+                            <input type="email" id="ruetianMail1" name="ruetian_mails[]">
+                        </div>
+                        <div class="form-group">
+                            <label for="ruetianLinkedin1">Ruetian LinkedIn</label>
+                            <input type="url" id="ruetianLinkedin1" name="ruetian_linkedins[]">
+                        </div>
+                    </div>
+                </div>
+            `;
             loadSponsorCount();
         } else {
             showAlert(result.message || 'Error adding sponsor', 'error');
@@ -609,6 +753,171 @@ function showAlert(message, type) {
 function downloadAllSponsors() {
     if (!isAdmin) return;
     window.location.href = '/api/sponsors/download';
+}
+
+let contactCount = 1;
+let ruetianCount = 1;
+let editContactCount = 1;
+let editRuetianCount = 1;
+
+function toggleContactFields(select, index) {
+    const phoneField = document.getElementById(`contactFields${index}`);
+    const mailField = document.getElementById(`contactMail${index}`);
+    if (select.value) {
+        phoneField.style.display = 'block';
+        mailField.style.display = 'block';
+    } else {
+        phoneField.style.display = 'none';
+        mailField.style.display = 'none';
+    }
+}
+
+function addContactField() {
+    contactCount++;
+    const container = document.getElementById('contactsContainer');
+    const newContact = document.createElement('div');
+    newContact.className = 'contact-item';
+    newContact.innerHTML = `
+        <div class="form-row">
+            <div class="form-group">
+                <label for="role${contactCount}">Role</label>
+                <select id="role${contactCount}" name="roles[]" onchange="toggleContactFields(this, ${contactCount})">
+                    <option value="">Select Role</option>
+                    <option value="CEO">CEO</option>
+                    <option value="CTO">CTO</option>
+                    <option value="Brand Manager">Brand Manager</option>
+                    <option value="Sponsor Manager">Sponsor Manager</option>
+                    <option value="HR">HR</option>
+                </select>
+            </div>
+            <div class="form-group contact-fields" id="contactFields${contactCount}" style="display:none;">
+                <label for="contactPhone${contactCount}">Phone (optional)</label>
+                <input type="tel" id="contactPhone${contactCount}" name="contact_phones[]">
+            </div>
+            <div class="form-group contact-fields" id="contactMail${contactCount}" style="display:none;">
+                <label for="contactMail${contactCount}">Mail (optional)</label>
+                <input type="email" id="contactMail${contactCount}" name="contact_mails[]">
+            </div>
+            <div class="form-group">
+                <button type="button" onclick="removeContactField(this)" class="btn btn-danger btn-sm">Remove</button>
+            </div>
+        </div>
+    `;
+    container.appendChild(newContact);
+}
+
+function removeContactField(button) {
+    button.closest('.contact-item').remove();
+}
+
+// Edit modal contact functions
+function addEditContact(role = '', phone = '', mail = '') {
+    editContactCount++;
+    const container = document.getElementById('editContactsContainer');
+    const newContact = document.createElement('div');
+    newContact.className = 'contact-group';
+    newContact.innerHTML = `
+        <div class="form-row">
+            <div class="form-group">
+                <label>Role</label>
+                <select name="edit_roles[]">
+                    <option value="">Select Role</option>
+                    <option value="CEO" ${role === 'CEO' ? 'selected' : ''}>CEO</option>
+                    <option value="CTO" ${role === 'CTO' ? 'selected' : ''}>CTO</option>
+                    <option value="Brand Manager" ${role === 'Brand Manager' ? 'selected' : ''}>Brand Manager</option>
+                    <option value="Sponsor Manager" ${role === 'Sponsor Manager' ? 'selected' : ''}>Sponsor Manager</option>
+                    <option value="HR" ${role === 'HR' ? 'selected' : ''}>HR</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Phone (optional)</label>
+                <input type="tel" name="edit_contact_phones[]" value="${phone}">
+            </div>
+            <div class="form-group">
+                <label>Mail (optional)</label>
+                <input type="email" name="edit_contact_mails[]" value="${mail}">
+            </div>
+            <div class="form-group">
+                <button type="button" onclick="removeEditContact(this)" class="btn btn-danger btn-sm">Remove</button>
+            </div>
+        </div>
+    `;
+    container.appendChild(newContact);
+}
+
+function removeEditContact(button) {
+    button.closest('.contact-group').remove();
+}
+
+function addRuetianField() {
+    ruetianCount++;
+    const container = document.getElementById('ruetiansContainer');
+    const newRuetian = document.createElement('div');
+    newRuetian.className = 'ruetian-item';
+    newRuetian.innerHTML = `
+        <div class="form-row">
+            <div class="form-group">
+                <label for="ruetianName${ruetianCount}">Ruetian Name</label>
+                <input type="text" id="ruetianName${ruetianCount}" name="ruetian_names[]">
+            </div>
+            <div class="form-group">
+                <label for="ruetianPhone${ruetianCount}">Ruetian Phone</label>
+                <input type="tel" id="ruetianPhone${ruetianCount}" name="ruetian_phones[]">
+            </div>
+            <div class="form-group">
+                <label for="ruetianMail${ruetianCount}">Ruetian Mail</label>
+                <input type="email" id="ruetianMail${ruetianCount}" name="ruetian_mails[]">
+            </div>
+            <div class="form-group">
+                <label for="ruetianLinkedin${ruetianCount}">Ruetian LinkedIn</label>
+                <input type="url" id="ruetianLinkedin${ruetianCount}" name="ruetian_linkedins[]">
+            </div>
+            <div class="form-group">
+                <button type="button" onclick="removeRuetianField(this)" class="btn btn-danger btn-sm">Remove</button>
+            </div>
+        </div>
+    `;
+    container.appendChild(newRuetian);
+}
+
+function removeRuetianField(button) {
+    button.closest('.ruetian-item').remove();
+}
+
+// Edit modal ruetian functions
+function addEditRuetian(name = '', phone = '', mail = '', linkedin = '') {
+    editRuetianCount++;
+    const container = document.getElementById('editRuetiansContainer');
+    const newRuetian = document.createElement('div');
+    newRuetian.className = 'ruetian-group';
+    newRuetian.innerHTML = `
+        <div class="form-row">
+            <div class="form-group">
+                <label>Ruetian Name</label>
+                <input type="text" name="edit_ruetian_names[]" value="${name}">
+            </div>
+            <div class="form-group">
+                <label>Ruetian Phone</label>
+                <input type="tel" name="edit_ruetian_phones[]" value="${phone}">
+            </div>
+            <div class="form-group">
+                <label>Ruetian Mail</label>
+                <input type="email" name="edit_ruetian_mails[]" value="${mail}">
+            </div>
+            <div class="form-group">
+                <label>Ruetian LinkedIn</label>
+                <input type="url" name="edit_ruetian_linkedins[]" value="${linkedin}">
+            </div>
+            <div class="form-group">
+                <button type="button" onclick="removeEditRuetian(this)" class="btn btn-danger btn-sm">Remove</button>
+            </div>
+        </div>
+    `;
+    container.appendChild(newRuetian);
+}
+
+function removeEditRuetian(button) {
+    button.closest('.ruetian-group').remove();
 }
  </script>
 {% endblock %}
