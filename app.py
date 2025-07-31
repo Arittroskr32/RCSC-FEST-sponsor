@@ -154,8 +154,7 @@ def search_sponsors():
         sponsors = list(sponsors_collection.find({
             '$or': [
                 {'company_name': regex},
-                {'website': regex},
-                {'sponsor_mail': regex}
+                {'website': regex}
             ]
         }))
         # Only return required fields
@@ -164,8 +163,7 @@ def search_sponsors():
             filtered.append({
                 'company_name': sponsor.get('company_name', ''),
                 'previous_sponsor': sponsor.get('previous_sponsor', ''),
-                'website': sponsor.get('website', ''),
-                'sponsor_mail': sponsor.get('sponsor_mail', '')
+                'website': sponsor.get('website', '')
             })
         sponsors = filtered
     else:
@@ -180,17 +178,19 @@ def add_sponsor():
     # Required fields
     company_name = request.json.get('company_name', '').strip()
     website = request.json.get('website', '').strip()
-    sponsor_mail = request.json.get('sponsor_mail', '').strip()
     category = request.json.get('category', '').strip()
     # Basic validation for required fields
-    if not company_name or not website or not sponsor_mail or not category:
+    if not company_name or not website or not category:
         return jsonify({'success': False, 'message': 'Missing required fields'}), 400
     try:
         sponsor_data = {
             'company_name': company_name,
+            'previous_sponsor': request.json.get('previous_sponsor', ''),
             'website': website,
-            'sponsor_mail': sponsor_mail,
+            'contacts': request.json.get('contacts', []),
+            'ruetians': request.json.get('ruetians', []),
             'category': category,
+            'other_category': request.json.get('other_category', ''),
             'created_at': datetime.utcnow(),
             'created_by': session.get('username')
         }
@@ -230,26 +230,94 @@ def download_sponsors():
         sponsors = list(sponsors_collection.find().sort('created_at', -1))
         data = []
         for sponsor in sponsors:
-            data.append({
+            # Initialize contact fields
+            contact_data = {
+                'CEO Phone': '',
+                'CEO Mail': '',
+                'CTO Phone': '',
+                'CTO Mail': '',
+                'Brand Manager Phone': '',
+                'Brand Manager Mail': '',
+                'Sponsor Manager Phone': '',
+                'Sponsor Manager Mail': '',
+                'HR Phone': '',
+                'HR Mail': ''
+            }
+            
+            # Fill contact data from contacts array
+            if sponsor.get('contacts'):
+                for contact in sponsor['contacts']:
+                    role = contact.get('role', '')
+                    phone = contact.get('phone', '')
+                    mail = contact.get('mail', '')
+                    
+                    if role == 'CEO':
+                        contact_data['CEO Phone'] = phone
+                        contact_data['CEO Mail'] = mail
+                    elif role == 'CTO':
+                        contact_data['CTO Phone'] = phone
+                        contact_data['CTO Mail'] = mail
+                    elif role == 'Brand Manager':
+                        contact_data['Brand Manager Phone'] = phone
+                        contact_data['Brand Manager Mail'] = mail
+                    elif role == 'Sponsor Manager':
+                        contact_data['Sponsor Manager Phone'] = phone
+                        contact_data['Sponsor Manager Mail'] = mail
+                    elif role == 'HR':
+                        contact_data['HR Phone'] = phone
+                        contact_data['HR Mail'] = mail
+            
+            # Initialize ruetian fields (up to 5 ruetians)
+            ruetian_data = {}
+            for i in range(1, 6):  # Support up to 5 ruetians
+                ruetian_data[f'Ruetian {i} Name'] = ''
+                ruetian_data[f'Ruetian {i} Phone'] = ''
+                ruetian_data[f'Ruetian {i} Mail'] = ''
+                ruetian_data[f'Ruetian {i} LinkedIn'] = ''
+            
+            # Fill ruetian data from ruetians array
+            if sponsor.get('ruetians'):
+                for idx, ruetian in enumerate(sponsor['ruetians'][:5]):  # Limit to 5 ruetians
+                    num = idx + 1
+                    ruetian_data[f'Ruetian {num} Name'] = ruetian.get('name', '')
+                    ruetian_data[f'Ruetian {num} Phone'] = ruetian.get('phone', '')
+                    ruetian_data[f'Ruetian {num} Mail'] = ruetian.get('mail', '')
+                    ruetian_data[f'Ruetian {num} LinkedIn'] = ruetian.get('linkedin', '')
+            
+            # Combine all data
+            row_data = {
                 'Company Name': sponsor.get('company_name', ''),
                 'Website': sponsor.get('website', ''),
-                'Ruetian Name': sponsor.get('ruetian_name', ''),
-                'Category': sponsor.get('category', ''),
-                'Sponsor Mail': sponsor.get('sponsor_mail', ''),
-                'CTO Phone': sponsor.get('cto_phone', ''),
-                'CEO Phone': sponsor.get('ceo_phone', ''),
-                'CEO Mail': sponsor.get('ceo_mail', ''),
                 'Previous Sponsor': sponsor.get('previous_sponsor', ''),
-                'Ruetian Phone': sponsor.get('ruetian_phone', ''),
-                'Ruetian Mail': sponsor.get('ruetian_mail', ''),
-                'Ruetian LinkedIn': sponsor.get('ruetian_linkedin', ''),
+                'Category': sponsor.get('category', ''),
                 'Other Category': sponsor.get('other_category', ''),
-                'Created At': sponsor.get('created_at', '').strftime('%Y-%m-%d %H:%M:%S') if sponsor.get('created_at') else ''
+            }
+            
+            # Add contact data
+            row_data.update(contact_data)
+            
+            # Add ruetian data
+            row_data.update(ruetian_data)
+            
+            # Add metadata
+            row_data.update({
+                'Created At': sponsor.get('created_at', '').strftime('%Y-%m-%d %H:%M:%S') if sponsor.get('created_at') else '',
+                'Created By': sponsor.get('created_by', '')
             })
+            
+            data.append(row_data)
+        
         df = pd.DataFrame(data)
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             df.to_excel(writer, index=False, sheet_name='Sponsors')
+            
+            # Auto-adjust column widths
+            worksheet = writer.sheets['Sponsors']
+            for i, col in enumerate(df.columns):
+                max_length = max(df[col].astype(str).map(len).max(), len(col))
+                worksheet.set_column(i, i, min(max_length + 2, 50))  # Max width of 50
+        
         output.seek(0)
         return send_file(output, download_name='sponsors_list.xlsx', as_attachment=True, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     except Exception as e:
